@@ -341,8 +341,8 @@ func (c ControllerContext) IsControllerEnabled(name string) bool {
 }
 
 // InitFunc is used to launch a particular controller.  It may run additional "should I activate checks".
-// Any error returned will cause the controller process to `Fatal`
-// The bool indicates whether the controller was enabled.
+// It must return ErrNotEnabled if the controller should not be enabled by the controller manager.
+// Any error other than ErrNotEnabled is considered FATAL to the controller manager.
 type InitFunc func(ctx ControllerContext) (controller cmcontroller.Controller, err error)
 
 // KnownControllers returns all known controllers's name
