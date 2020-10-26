@@ -25,6 +25,7 @@ filegroup(
         ":package-srcs",
         "//staging/src/k8s.io/controller-manager/app:all-srcs",
         "//staging/src/k8s.io/controller-manager/config:all-srcs",
+        "//staging/src/k8s.io/controller-manager/controller:all-srcs",
         "//staging/src/k8s.io/controller-manager/options:all-srcs",
         "//staging/src/k8s.io/controller-manager/pkg/clientbuilder:all-srcs",
         "//staging/src/k8s.io/controller-manager/pkg/features:all-srcs",

@@ -147,6 +147,8 @@ go_library(
         "//staging/src/k8s.io/component-base/version:go_default_library",
         "//staging/src/k8s.io/component-base/version/verflag:go_default_library",
         "//staging/src/k8s.io/controller-manager/app:go_default_library",
+        "//staging/src/k8s.io/controller-manager/controller:go_default_library",
+        "//staging/src/k8s.io/controller-manager/controller/errors:go_default_library",
         "//staging/src/k8s.io/controller-manager/pkg/clientbuilder:go_default_library",
         "//staging/src/k8s.io/controller-manager/pkg/informerfactory:go_default_library",
         "//staging/src/k8s.io/csi-translation-lib:go_default_library",
@@ -177,6 +179,8 @@ go_test(
         "//staging/src/k8s.io/client-go/kubernetes:go_default_library",
         "//staging/src/k8s.io/client-go/kubernetes/fake:go_default_library",
         "//staging/src/k8s.io/client-go/rest:go_default_library",
+        "//staging/src/k8s.io/controller-manager/controller:go_default_library",
+        "//staging/src/k8s.io/controller-manager/controller/errors:go_default_library",
     ],
 )
 
