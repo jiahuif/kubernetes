@@ -26,8 +26,9 @@ import (
 	"k8s.io/client-go/informers"
 	clientset "k8s.io/client-go/kubernetes"
 	fakeclientset "k8s.io/client-go/kubernetes/fake"
-	cmcontroller "k8s.io/controller-manager/controller"
 	restclient "k8s.io/client-go/rest"
+	cmcontroller "k8s.io/controller-manager/controller"
+	cmerrors "k8s.io/controller-manager/controller/errors"
 )
 
 // TestClientBuilder inherits ClientBuilder and can accept a given fake clientset.
@@ -133,7 +134,7 @@ func TestController_DiscoveryError(t *testing.T) {
 		}
 		for funcName, controllerInit := range controllerInitFuncMap {
 			_, err := controllerInit(ctx)
-			if test.expectedErr != (err != nil) {
+			if test.expectedErr != (err != nil && err != cmerrors.ErrNotEnabled) {
 				t.Errorf("%v test failed for use case: %v", funcName, name)
 			}
 		}
