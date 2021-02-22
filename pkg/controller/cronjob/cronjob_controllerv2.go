@@ -18,6 +18,7 @@ package cronjob
 
 import (
 	"fmt"
+	"net/http"
 	"reflect"
 	"sort"
 	"time"
@@ -676,4 +677,9 @@ func isJobInActiveList(job *batchv1.Job, activeJobs []corev1.ObjectReference) bo
 		}
 	}
 	return false
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (jm *ControllerV2) DebuggingHandler() http.Handler {
+	return nil
 }

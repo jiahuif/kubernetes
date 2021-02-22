@@ -19,6 +19,7 @@ package pvcprotection
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -417,4 +418,9 @@ func (c *Controller) enqueuePVCs(pod *v1.Pod, deleted bool) {
 			c.queue.Add(pod.Namespace + "/" + pod.Name + "-" + volume.Name)
 		}
 	}
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (c *Controller) DebuggingHandler() http.Handler {
+	return nil
 }

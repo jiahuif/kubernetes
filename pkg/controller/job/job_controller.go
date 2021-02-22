@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"net/http"
 	"reflect"
 	"sort"
 	"sync"
@@ -842,6 +843,11 @@ func (jm *Controller) updateJobStatus(job *batch.Job) error {
 	}
 
 	return err
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (jm *Controller) DebuggingHandler() http.Handler {
+	return nil
 }
 
 func getBackoff(queue workqueue.RateLimitingInterface, key interface{}) time.Duration {

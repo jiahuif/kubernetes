@@ -20,6 +20,7 @@ import (
 	"context"
 	goerrors "errors"
 	"fmt"
+	"net/http"
 	"reflect"
 	"sync"
 	"time"
@@ -725,4 +726,9 @@ func GetDeletableResources(discoveryClient discovery.ServerResourcesInterface) m
 	}
 
 	return deletableGroupVersionResources
+}
+
+// DebuggingHandler returns a debugging handler accessible at "/debug/controllers/garbagecollector/"
+func (gc *GarbageCollector) DebuggingHandler() http.Handler {
+	return NewDebugHandler(gc)
 }

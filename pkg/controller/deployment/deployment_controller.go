@@ -23,6 +23,7 @@ package deployment
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"time"
 
@@ -652,4 +653,9 @@ func (dc *DeploymentController) syncDeployment(key string) error {
 		return dc.rolloutRolling(d, rsList)
 	}
 	return fmt.Errorf("unexpected deployment strategy type: %s", d.Spec.Strategy.Type)
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (dc *DeploymentController) DebuggingHandler() http.Handler {
+	return nil
 }

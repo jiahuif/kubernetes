@@ -19,6 +19,7 @@ package rootcacertpublisher
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"time"
 
@@ -215,6 +216,11 @@ func (c *Publisher) syncNamespace(ns string) (err error) {
 
 	_, err = c.client.CoreV1().ConfigMaps(ns).Update(context.TODO(), cm, metav1.UpdateOptions{})
 	return err
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (c *Publisher) DebuggingHandler() http.Handler {
+	return nil
 }
 
 func convertToCM(obj interface{}) (*v1.ConfigMap, error) {

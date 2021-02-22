@@ -19,6 +19,7 @@ package endpoint
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -645,4 +646,9 @@ func endpointPortFromServicePort(servicePort *v1.ServicePort, portNum int) *v1.E
 		AppProtocol: servicePort.AppProtocol,
 	}
 	return epp
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (e *Controller) DebuggingHandler() http.Handler {
+	return nil
 }

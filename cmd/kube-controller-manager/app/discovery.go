@@ -21,28 +21,28 @@ limitations under the License.
 package app
 
 import (
-	"net/http"
-
 	discoveryv1beta1 "k8s.io/api/discovery/v1beta1"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
+	cmcontroller "k8s.io/controller-manager/controller"
+	cmerrors "k8s.io/controller-manager/controller/errors"
 	"k8s.io/klog/v2"
 	endpointslicecontroller "k8s.io/kubernetes/pkg/controller/endpointslice"
 	endpointslicemirroringcontroller "k8s.io/kubernetes/pkg/controller/endpointslicemirroring"
 	"k8s.io/kubernetes/pkg/features"
 )
 
-func startEndpointSliceController(ctx ControllerContext) (http.Handler, bool, error) {
+func startEndpointSliceController(ctx ControllerContext) (cmcontroller.Controller, error) {
 	if !utilfeature.DefaultFeatureGate.Enabled(features.EndpointSlice) {
 		klog.V(2).Infof("Not starting endpointslice-controller since EndpointSlice feature gate is disabled")
-		return nil, false, nil
+		return nil, cmerrors.ErrNotEnabled
 	}
 
 	if !ctx.AvailableResources[discoveryv1beta1.SchemeGroupVersion.WithResource("endpointslices")] {
 		klog.Warningf("Not starting endpointslice-controller since discovery.k8s.io/v1beta1 resources are not available")
-		return nil, false, nil
+		return nil, cmerrors.ErrNotEnabled
 	}
 
-	go endpointslicecontroller.NewController(
+	c := endpointslicecontroller.NewController(
 		ctx.InformerFactory.Core().V1().Pods(),
 		ctx.InformerFactory.Core().V1().Services(),
 		ctx.InformerFactory.Core().V1().Nodes(),
@@ -50,28 +50,30 @@ func startEndpointSliceController(ctx ControllerContext) (http.Handler, bool, er
 		ctx.ComponentConfig.EndpointSliceController.MaxEndpointsPerSlice,
 		ctx.ClientBuilder.ClientOrDie("endpointslice-controller"),
 		ctx.ComponentConfig.EndpointSliceController.EndpointUpdatesBatchPeriod.Duration,
-	).Run(int(ctx.ComponentConfig.EndpointSliceController.ConcurrentServiceEndpointSyncs), ctx.Stop)
-	return nil, true, nil
+	)
+	go c.Run(int(ctx.ComponentConfig.EndpointSliceController.ConcurrentServiceEndpointSyncs), ctx.Stop)
+	return c, nil
 }
 
-func startEndpointSliceMirroringController(ctx ControllerContext) (http.Handler, bool, error) {
+func startEndpointSliceMirroringController(ctx ControllerContext) (cmcontroller.Controller, error) {
 	if !utilfeature.DefaultFeatureGate.Enabled(features.EndpointSlice) {
 		klog.V(2).Infof("Not starting endpointslicemirroring-controller since EndpointSlice feature gate is disabled")
-		return nil, false, nil
+		return nil, cmerrors.ErrNotEnabled
 	}
 
 	if !ctx.AvailableResources[discoveryv1beta1.SchemeGroupVersion.WithResource("endpointslices")] {
 		klog.Warningf("Not starting endpointslicemirroring-controller since discovery.k8s.io/v1beta1 resources are not available")
-		return nil, false, nil
+		return nil, cmerrors.ErrNotEnabled
 	}
 
-	go endpointslicemirroringcontroller.NewController(
+	c := endpointslicemirroringcontroller.NewController(
 		ctx.InformerFactory.Core().V1().Endpoints(),
 		ctx.InformerFactory.Discovery().V1beta1().EndpointSlices(),
 		ctx.InformerFactory.Core().V1().Services(),
 		ctx.ComponentConfig.EndpointSliceMirroringController.MirroringMaxEndpointsPerSubset,
 		ctx.ClientBuilder.ClientOrDie("endpointslicemirroring-controller"),
 		ctx.ComponentConfig.EndpointSliceMirroringController.MirroringEndpointUpdatesBatchPeriod.Duration,
-	).Run(int(ctx.ComponentConfig.EndpointSliceMirroringController.MirroringConcurrentServiceEndpointSyncs), ctx.Stop)
-	return nil, true, nil
+	)
+	go c.Run(int(ctx.ComponentConfig.EndpointSliceMirroringController.MirroringConcurrentServiceEndpointSyncs), ctx.Stop)
+	return c, nil
 }

@@ -21,6 +21,7 @@ package attachdetach
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -101,6 +102,7 @@ var DefaultTimerConfig TimerConfig = TimerConfig{
 type AttachDetachController interface {
 	Run(stopCh <-chan struct{})
 	GetDesiredStateOfWorld() cache.DesiredStateOfWorld
+	DebuggingHandler() http.Handler
 }
 
 // NewAttachDetachController returns a new instance of AttachDetachController.
@@ -894,4 +896,9 @@ func (adc *attachDetachController) GetFilteredDialOptions() *proxyutil.FilteredD
 
 func (adc *attachDetachController) GetCSIDriverLister() storagelistersv1.CSIDriverLister {
 	return adc.csiDriverLister
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (adc *attachDetachController) DebuggingHandler() http.Handler {
+	return nil
 }

@@ -18,6 +18,7 @@ package endpointslicemirroring
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -496,6 +497,11 @@ func (c *Controller) deleteMirroredSlices(namespace, name string) error {
 
 	c.endpointSliceTracker.DeleteService(namespace, name)
 	return c.reconciler.deleteEndpoints(namespace, name, endpointSlices)
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (c *Controller) DebuggingHandler() http.Handler {
+	return nil
 }
 
 // endpointSlicesMirroredForService returns the EndpointSlices that have been

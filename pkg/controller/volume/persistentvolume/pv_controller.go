@@ -19,6 +19,7 @@ package persistentvolume
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"strings"
 	"time"
@@ -1859,4 +1860,9 @@ func (ctrl *PersistentVolumeController) getProvisionerName(plugin vol.Provisiona
 		return provisionerName
 	}
 	return storageClass.Provisioner
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (ctrl *PersistentVolumeController) DebuggingHandler() http.Handler {
+	return nil
 }

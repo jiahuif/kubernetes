@@ -19,6 +19,7 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -210,4 +211,9 @@ func (tc *TokenCleaner) evalSecret(o interface{}) {
 		}
 		tc.queue.AddAfter(key, ttl)
 	}
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (tc *TokenCleaner) DebuggingHandler() http.Handler {
+	return nil
 }

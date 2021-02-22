@@ -24,6 +24,7 @@ package nodelifecycle
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
@@ -1544,5 +1545,10 @@ func (nc *Controller) reconcileNodeLabels(nodeName string) error {
 	if !nodeutil.AddOrUpdateLabelsOnNode(nc.kubeClient, labelsToUpdate, node) {
 		return fmt.Errorf("failed update labels for node %+v", node)
 	}
+	return nil
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (nc *Controller) DebuggingHandler() http.Handler {
 	return nil
 }

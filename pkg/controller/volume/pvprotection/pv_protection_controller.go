@@ -19,6 +19,7 @@ package pvprotection
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"k8s.io/api/core/v1"
@@ -207,4 +208,9 @@ func (c *Controller) pvAddedUpdated(obj interface{}) {
 	if protectionutil.NeedToAddFinalizer(pv, volumeutil.PVProtectionFinalizer) || protectionutil.IsDeletionCandidate(pv, volumeutil.PVProtectionFinalizer) {
 		c.queue.Add(pv.Name)
 	}
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (c *Controller) DebuggingHandler() http.Handler {
+	return nil
 }

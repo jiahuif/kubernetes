@@ -19,6 +19,7 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"sort"
 	"sync"
@@ -1245,6 +1246,11 @@ func (dsc *DaemonSetsController) nodeShouldRunDaemonPod(node *v1.Node, ds *apps.
 	}
 
 	return true, true, nil
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (dsc *DaemonSetsController) DebuggingHandler() http.Handler {
+	return nil
 }
 
 // Predicates checks if a DaemonSet's pod can run on a node.

@@ -19,6 +19,7 @@ package cloud
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 
 	"k8s.io/api/core/v1"
@@ -236,4 +237,9 @@ func ensureNodeExistsByProviderID(ctx context.Context, cloud cloudprovider.Inter
 	}
 
 	return instances.InstanceExistsByProviderID(ctx, providerID)
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (c *CloudNodeLifecycleController) DebuggingHandler() http.Handler {
+	return nil
 }

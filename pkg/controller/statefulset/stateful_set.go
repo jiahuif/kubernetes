@@ -19,6 +19,7 @@ package statefulset
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"time"
 
@@ -451,5 +452,10 @@ func (ssc *StatefulSetController) syncStatefulSet(set *apps.StatefulSet, pods []
 		return err
 	}
 	klog.V(4).Infof("Successfully synced StatefulSet %s/%s successful", set.Namespace, set.Name)
+	return nil
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (ssc *StatefulSetController) DebuggingHandler() http.Handler {
 	return nil
 }

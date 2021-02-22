@@ -19,6 +19,7 @@ package ttlafterfinished
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -314,4 +315,9 @@ func jobFinishTime(finishedJob *batch.Job) (metav1.Time, error) {
 
 	// This should never happen if the Jobs has finished
 	return metav1.Time{}, fmt.Errorf("unable to find the status of the finished Job %s/%s", finishedJob.Namespace, finishedJob.Name)
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (tc *Controller) DebuggingHandler() http.Handler {
+	return nil
 }

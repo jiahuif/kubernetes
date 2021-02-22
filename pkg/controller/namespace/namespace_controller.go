@@ -18,6 +18,7 @@ package namespace
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -209,4 +210,9 @@ func (nm *NamespaceController) Run(workers int, stopCh <-chan struct{}) {
 		go wait.Until(nm.worker, time.Second, stopCh)
 	}
 	<-stopCh
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (nm *NamespaceController) DebuggingHandler() http.Handler {
+	return nil
 }

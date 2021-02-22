@@ -22,7 +22,6 @@ package app
 
 import (
 	"fmt"
-	"net/http"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -30,12 +29,15 @@ import (
 	"k8s.io/kubernetes/pkg/controller/daemon"
 	"k8s.io/kubernetes/pkg/controller/deployment"
 	"k8s.io/kubernetes/pkg/controller/replicaset"
+
+	cmcontroller "k8s.io/controller-manager/controller"
+	cmerrors "k8s.io/controller-manager/controller/errors"
 	"k8s.io/kubernetes/pkg/controller/statefulset"
 )
 
-func startDaemonSetController(ctx ControllerContext) (http.Handler, bool, error) {
+func startDaemonSetController(ctx ControllerContext) (cmcontroller.Controller, error) {
 	if !ctx.AvailableResources[schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "daemonsets"}] {
-		return nil, false, nil
+		return nil, cmerrors.ErrNotEnabled
 	}
 	dsc, err := daemon.NewDaemonSetsController(
 		ctx.InformerFactory.Apps().V1().DaemonSets(),
@@ -46,42 +48,44 @@ func startDaemonSetController(ctx ControllerContext) (http.Handler, bool, error)
 		flowcontrol.NewBackOff(1*time.Second, 15*time.Minute),
 	)
 	if err != nil {
-		return nil, true, fmt.Errorf("error creating DaemonSets controller: %v", err)
+		return nil, fmt.Errorf("error creating DaemonSets controller: %v", err)
 	}
 	go dsc.Run(int(ctx.ComponentConfig.DaemonSetController.ConcurrentDaemonSetSyncs), ctx.Stop)
-	return nil, true, nil
+	return dsc, nil
 }
 
-func startStatefulSetController(ctx ControllerContext) (http.Handler, bool, error) {
+func startStatefulSetController(ctx ControllerContext) (cmcontroller.Controller, error) {
 	if !ctx.AvailableResources[schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "statefulsets"}] {
-		return nil, false, nil
+		return nil, cmerrors.ErrNotEnabled
 	}
-	go statefulset.NewStatefulSetController(
+	c := statefulset.NewStatefulSetController(
 		ctx.InformerFactory.Core().V1().Pods(),
 		ctx.InformerFactory.Apps().V1().StatefulSets(),
 		ctx.InformerFactory.Core().V1().PersistentVolumeClaims(),
 		ctx.InformerFactory.Apps().V1().ControllerRevisions(),
 		ctx.ClientBuilder.ClientOrDie("statefulset-controller"),
-	).Run(int(ctx.ComponentConfig.StatefulSetController.ConcurrentStatefulSetSyncs), ctx.Stop)
-	return nil, true, nil
+	)
+	go c.Run(int(ctx.ComponentConfig.StatefulSetController.ConcurrentStatefulSetSyncs), ctx.Stop)
+	return c, nil
 }
 
-func startReplicaSetController(ctx ControllerContext) (http.Handler, bool, error) {
+func startReplicaSetController(ctx ControllerContext) (cmcontroller.Controller, error) {
 	if !ctx.AvailableResources[schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "replicasets"}] {
-		return nil, false, nil
+		return nil, cmerrors.ErrNotEnabled
 	}
-	go replicaset.NewReplicaSetController(
+	c := replicaset.NewReplicaSetController(
 		ctx.InformerFactory.Apps().V1().ReplicaSets(),
 		ctx.InformerFactory.Core().V1().Pods(),
 		ctx.ClientBuilder.ClientOrDie("replicaset-controller"),
 		replicaset.BurstReplicas,
-	).Run(int(ctx.ComponentConfig.ReplicaSetController.ConcurrentRSSyncs), ctx.Stop)
-	return nil, true, nil
+	)
+	go c.Run(int(ctx.ComponentConfig.ReplicaSetController.ConcurrentRSSyncs), ctx.Stop)
+	return c, nil
 }
 
-func startDeploymentController(ctx ControllerContext) (http.Handler, bool, error) {
+func startDeploymentController(ctx ControllerContext) (cmcontroller.Controller, error) {
 	if !ctx.AvailableResources[schema.GroupVersionResource{Group: "apps", Version: "v1", Resource: "deployments"}] {
-		return nil, false, nil
+		return nil, cmerrors.ErrNotEnabled
 	}
 	dc, err := deployment.NewDeploymentController(
 		ctx.InformerFactory.Apps().V1().Deployments(),
@@ -90,8 +94,8 @@ func startDeploymentController(ctx ControllerContext) (http.Handler, bool, error
 		ctx.ClientBuilder.ClientOrDie("deployment-controller"),
 	)
 	if err != nil {
-		return nil, true, fmt.Errorf("error creating Deployment controller: %v", err)
+		return nil, fmt.Errorf("error creating Deployment controller: %v", err)
 	}
 	go dc.Run(int(ctx.ComponentConfig.DeploymentController.ConcurrentDeploymentSyncs), ctx.Stop)
-	return nil, true, nil
+	return dc, nil
 }

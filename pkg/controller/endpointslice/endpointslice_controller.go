@@ -18,6 +18,7 @@ package endpointslice
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -470,4 +471,9 @@ func (c *Controller) deletePod(obj interface{}) {
 	if pod != nil {
 		c.addPod(pod)
 	}
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (c *Controller) DebuggingHandler() http.Handler {
+	return nil
 }

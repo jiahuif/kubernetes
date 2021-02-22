@@ -19,6 +19,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"sync"
 	"time"
@@ -892,4 +893,9 @@ func listWithPredicate(nodeLister corelisters.NodeLister, predicate NodeConditio
 	}
 
 	return filtered, nil
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (s *Controller) DebuggingHandler() http.Handler {
+	return nil
 }

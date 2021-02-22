@@ -19,6 +19,7 @@ package disruption
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -822,4 +823,9 @@ func (dc *DisruptionController) writePdbStatus(pdb *policy.PodDisruptionBudget) 
 	// retried in `processNextWorkItem()`.
 	_, err := dc.kubeClient.PolicyV1beta1().PodDisruptionBudgets(pdb.Namespace).UpdateStatus(context.TODO(), pdb, metav1.UpdateOptions{})
 	return err
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (dc *DisruptionController) DebuggingHandler() http.Handler {
+	return nil
 }

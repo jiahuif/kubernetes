@@ -19,6 +19,7 @@ package serviceaccount
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"k8s.io/api/core/v1"
@@ -222,4 +223,9 @@ func (c *ServiceAccountsController) syncNamespace(key string) error {
 	}
 
 	return utilerrors.Flatten(utilerrors.NewAggregate(createFailures))
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (c *ServiceAccountsController) DebuggingHandler() http.Handler {
+	return nil
 }

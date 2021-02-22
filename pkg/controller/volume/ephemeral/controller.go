@@ -19,6 +19,7 @@ package ephemeral
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -45,6 +46,8 @@ import (
 // Controller creates PVCs for ephemeral inline volumes in a pod spec.
 type Controller interface {
 	Run(workers int, stopCh <-chan struct{})
+
+	DebuggingHandler() http.Handler
 }
 
 type ephemeralController struct {
@@ -282,5 +285,10 @@ func (ec *ephemeralController) handleVolume(pod *v1.Pod, vol v1.Volume) error {
 	if err != nil {
 		return fmt.Errorf("create PVC %s: %v", pvcName, err)
 	}
+	return nil
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (ec *ephemeralController) DebuggingHandler() http.Handler {
 	return nil
 }

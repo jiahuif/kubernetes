@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"k8s.io/api/core/v1"
@@ -773,4 +774,9 @@ func parseSecretQueueKey(key interface{}) (secretQueueKey, error) {
 // produce the same key format as cache.MetaNamespaceKeyFunc
 func makeCacheKey(namespace, name string) string {
 	return namespace + "/" + name
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (e *TokensController) DebuggingHandler() http.Handler {
+	return nil
 }

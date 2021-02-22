@@ -20,6 +20,7 @@ package certificates
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"golang.org/x/time/rate"
@@ -189,6 +190,11 @@ func (cc *CertificateController) syncFunc(key string) error {
 	// need to operate on a copy so we don't mutate the csr in the shared cache
 	csr = csr.DeepCopy()
 	return cc.handler(csr)
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (cc *CertificateController) DebuggingHandler() http.Handler {
+	return nil
 }
 
 // IgnorableError returns an error that we shouldn't handle (i.e. log) because

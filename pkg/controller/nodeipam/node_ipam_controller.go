@@ -18,6 +18,7 @@ package nodeipam
 
 import (
 	"net"
+	"net/http"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -163,4 +164,9 @@ func (nc *Controller) Run(stopCh <-chan struct{}) {
 	}
 
 	<-stopCh
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (nc *Controller) DebuggingHandler() http.Handler {
+	return nil
 }

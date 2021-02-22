@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -358,6 +359,11 @@ func (rc *RouteController) isResponsibleForRoute(route *cloudprovider.Route) boo
 		}
 	}
 	return false
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (rc *RouteController) DebuggingHandler() http.Handler {
+	return nil
 }
 
 // checks if a node owns a route with a specific cidr

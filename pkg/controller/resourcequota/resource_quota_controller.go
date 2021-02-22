@@ -19,6 +19,7 @@ package resourcequota
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"sync"
 	"time"
@@ -515,4 +516,9 @@ func GetQuotableResources(discoveryFunc NamespacedResourcesFunc) (map[schema.Gro
 	}
 	// return the original discovery error (if any) in addition to the list
 	return quotableGroupVersionResources, discoveryErr
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (rq *Controller) DebuggingHandler() http.Handler {
+	return nil
 }

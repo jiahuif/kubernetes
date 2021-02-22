@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -61,6 +62,8 @@ const (
 // ExpandController expands the pvs
 type ExpandController interface {
 	Run(stopCh <-chan struct{})
+
+	DebuggingHandler() http.Handler
 }
 
 // CSINameTranslator can get the CSI Driver name based on the in-tree plugin name
@@ -441,4 +444,9 @@ func (expc *expandController) GetSubpather() subpath.Interface {
 
 func (expc *expandController) GetFilteredDialOptions() *proxyutil.FilteredDialOptions {
 	return expc.filteredDialOptions
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (expc *expandController) DebuggingHandler() http.Handler {
+	return nil
 }

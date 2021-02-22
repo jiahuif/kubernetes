@@ -30,6 +30,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
@@ -293,4 +294,9 @@ func (ttlc *Controller) updateNodeIfNeeded(key string) error {
 	}
 
 	return ttlc.patchNodeWithAnnotation(node.DeepCopy(), v1.ObjectTTLAnnotationKey, desiredTTL)
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (ttlc *Controller) DebuggingHandler() http.Handler {
+	return nil
 }

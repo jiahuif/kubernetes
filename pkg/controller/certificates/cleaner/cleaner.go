@@ -25,6 +25,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"net/http"
 	"time"
 
 	"k8s.io/klog/v2"
@@ -113,6 +114,11 @@ func (ccc *CSRCleanerController) handle(csr *capi.CertificateSigningRequest) err
 			return fmt.Errorf("unable to delete CSR %q: %v", csr.Name, err)
 		}
 	}
+	return nil
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (ccc *CSRCleanerController) DebuggingHandler() http.Handler {
 	return nil
 }
 

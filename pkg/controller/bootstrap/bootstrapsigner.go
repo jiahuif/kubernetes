@@ -18,6 +18,7 @@ package bootstrap
 
 import (
 	"context"
+	"net/http"
 	"strings"
 	"time"
 
@@ -306,4 +307,9 @@ func (e *Signer) getTokens() map[string]string {
 	}
 
 	return ret
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (e *Signer) DebuggingHandler() http.Handler {
+	return nil
 }

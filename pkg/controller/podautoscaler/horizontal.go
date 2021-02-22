@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"net/http"
 	"time"
 
 	autoscalingv1 "k8s.io/api/autoscaling/v1"
@@ -1168,6 +1169,11 @@ func (a *HorizontalController) updateStatus(hpa *autoscalingv2.HorizontalPodAuto
 		return fmt.Errorf("failed to update status for %s: %v", hpa.Name, err)
 	}
 	klog.V(2).Infof("Successfully updated status for %s", hpa.Name)
+	return nil
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (a *HorizontalController) DebuggingHandler() http.Handler {
 	return nil
 }
 

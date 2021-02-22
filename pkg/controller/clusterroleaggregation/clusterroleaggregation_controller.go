@@ -19,6 +19,7 @@ package clusterroleaggregation
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sort"
 	"time"
 
@@ -205,6 +206,11 @@ func (c *ClusterRoleAggregationController) enqueue() {
 		}
 		c.queue.Add(key)
 	}
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (c *ClusterRoleAggregationController) DebuggingHandler() http.Handler {
+	return nil
 }
 
 type byName []*rbacv1.ClusterRole

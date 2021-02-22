@@ -18,6 +18,7 @@ package podgc
 
 import (
 	"context"
+	"net/http"
 	"sort"
 	"sync"
 	"time"
@@ -235,6 +236,11 @@ func (gcc *PodGCController) gcUnscheduledTerminating(pods []*v1.Pod) {
 			klog.V(0).Infof("Forced deletion of unscheduled terminating Pod %v/%v succeeded", pod.Namespace, pod.Name)
 		}
 	}
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (gcc *PodGCController) DebuggingHandler() http.Handler {
+	return nil
 }
 
 // byCreationTimestamp sorts a list by creation timestamp, using their names as a tie breaker.

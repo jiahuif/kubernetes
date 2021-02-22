@@ -19,6 +19,7 @@ package storageversiongc
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	apiserverinternalv1alpha1 "k8s.io/api/apiserverinternal/v1alpha1"
@@ -276,4 +277,9 @@ func (c *Controller) updateOrDeleteStorageVersion(sv *apiserverinternalv1alpha1.
 	_, err := c.kubeclientset.InternalV1alpha1().StorageVersions().UpdateStatus(
 		context.TODO(), sv, metav1.UpdateOptions{})
 	return err
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (c *Controller) DebuggingHandler() http.Handler {
+	panic("implement me")
 }

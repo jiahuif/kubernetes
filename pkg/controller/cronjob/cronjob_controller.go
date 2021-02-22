@@ -30,6 +30,7 @@ Just periodically list jobs and cronJobs, and then reconcile them.
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"sort"
 	"time"
 
@@ -144,6 +145,11 @@ func (jm *Controller) syncAll() {
 		utilruntime.HandleError(fmt.Errorf("Failed to extract cronJobs list: %v", err))
 		return
 	}
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (jm *Controller) DebuggingHandler() http.Handler {
+	return nil
 }
 
 // cleanupFinishedJobs cleanups finished jobs created by a CronJob

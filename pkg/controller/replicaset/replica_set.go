@@ -30,6 +30,7 @@ package replicaset
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"reflect"
 	"sort"
 	"strings"
@@ -795,6 +796,11 @@ func (rsc *ReplicaSetController) getIndirectlyRelatedPods(rs *apps.ReplicaSet) (
 		klog.Infof("Found %d related pods for %v %s/%s: %v", len(relatedPods), rsc.Kind, rs.Namespace, rs.Name, strings.Join(relatedNames, ", "))
 	}
 	return relatedPods, nil
+}
+
+// DebuggingHandler returns nil because debugging handler is not needed.
+func (rsc *ReplicaSetController) DebuggingHandler() http.Handler {
+	return nil
 }
 
 func getPodsToDelete(filteredPods, relatedPods []*v1.Pod, diff int) []*v1.Pod {
