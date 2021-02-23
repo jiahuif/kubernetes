@@ -29,7 +29,7 @@ filegroup(
         "//staging/src/k8s.io/controller-manager/pkg/clientbuilder:all-srcs",
         "//staging/src/k8s.io/controller-manager/pkg/features:all-srcs",
         "//staging/src/k8s.io/controller-manager/pkg/informerfactory:all-srcs",
-        "//staging/src/k8s.io/controller-manager/pkg/leadermigration/config:all-srcs",
+        "//staging/src/k8s.io/controller-manager/pkg/leadermigration:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],

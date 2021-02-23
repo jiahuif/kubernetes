@@ -46,6 +46,10 @@ type GenericControllerManagerConfiguration struct {
 	Controllers []string
 	// DebuggingConfiguration holds configuration for Debugging related features.
 	Debugging componentbaseconfig.DebuggingConfiguration
+	// LeaderMigrationEnabled indicates whether controller manager leader migration will be enabled.
+	LeaderMigrationEnabled bool
+	// LeaderMigrationConfiguration holds configuration for controller manager leader migration.
+	LeaderMigrationConfiguration LeaderMigrationConfiguration
 }
 
 // LeaderMigrationConfiguration provides versioned configuration for all migrating leader locks.
