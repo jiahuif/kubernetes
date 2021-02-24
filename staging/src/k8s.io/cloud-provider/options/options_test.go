@@ -31,6 +31,7 @@ import (
 	componentbaseconfig "k8s.io/component-base/config"
 	cmconfig "k8s.io/controller-manager/config"
 	cmoptions "k8s.io/controller-manager/options"
+	migrationoptions "k8s.io/controller-manager/pkg/leadermigration/options"
 )
 
 func TestDefaultFlags(t *testing.T) {
@@ -65,6 +66,7 @@ func TestDefaultFlags(t *testing.T) {
 					EnableContentionProfiling: false,
 				},
 			},
+			LeaderMigration: &migrationoptions.LeaderMigrationOptions{},
 		},
 		KubeCloudShared: &KubeCloudSharedOptions{
 			KubeCloudSharedConfiguration: &cpconfig.KubeCloudSharedConfiguration{
@@ -171,6 +173,7 @@ func TestAddFlags(t *testing.T) {
 		"--route-reconciliation-period=30s",
 		"--secure-port=10001",
 		"--use-service-account-credentials=false",
+		"--enable-leader-migration",
 	}
 	fs.Parse(args)
 
@@ -202,6 +205,10 @@ func TestAddFlags(t *testing.T) {
 					EnableProfiling:           false,
 					EnableContentionProfiling: true,
 				},
+			},
+			LeaderMigration: &migrationoptions.LeaderMigrationOptions{
+				Enabled:                   true,
+				ControllerMigrationConfig: "",
 			},
 		},
 		KubeCloudShared: &KubeCloudSharedOptions{

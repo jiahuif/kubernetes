@@ -15,6 +15,7 @@ go_library(
         "//staging/src/k8s.io/component-base/config:go_default_library",
         "//staging/src/k8s.io/component-base/config/options:go_default_library",
         "//staging/src/k8s.io/controller-manager/config:go_default_library",
+        "//staging/src/k8s.io/controller-manager/pkg/leadermigration/options:go_default_library",
         "//vendor/github.com/spf13/pflag:go_default_library",
     ],
 )

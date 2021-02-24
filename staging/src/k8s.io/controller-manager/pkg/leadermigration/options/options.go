@@ -28,6 +28,12 @@ type LeaderMigrationOptions struct {
 	ControllerMigrationConfig string
 }
 
+// DefaultLeaderMigrationOptions returns a LeaderMigrationOptions with default values.
+func DefaultLeaderMigrationOptions() *LeaderMigrationOptions {
+	return &LeaderMigrationOptions{}
+}
+
+// AddFlags adds all flags related to leader migration to given flag set.
 func (o *LeaderMigrationOptions) AddFlags(fs *pflag.FlagSet) {
 	if o == nil {
 		return
@@ -36,7 +42,8 @@ func (o *LeaderMigrationOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&o.ControllerMigrationConfig, "leader-migration-config", "", "Path to the config file for controller leader migration. Leave empty to use default value.")
 }
 
-func (o *LeaderMigrationOptions) ApplyTo(cfg *config.GenericControllerManagerConfiguration) []error {
+// ApplyTo applies the options of leader migration to generic configuration.
+func (o *LeaderMigrationOptions) ApplyTo(cfg *config.GenericControllerManagerConfiguration) error {
 	if o == nil {
 		return nil
 	}
@@ -47,11 +54,11 @@ func (o *LeaderMigrationOptions) ApplyTo(cfg *config.GenericControllerManagerCon
 	}
 	leaderMigrationConfig, err := migrationconfig.ReadLeaderMigrationConfiguration(o.ControllerMigrationConfig)
 	if err != nil {
-		return []error{err}
+		return err
 	}
 	errs := migrationconfig.ValidateLeaderMigrationConfiguration(leaderMigrationConfig)
 	if len(errs) != 0 {
-		return []error{fmt.Errorf("failed to parse leader migration configuration: %v", errs)}
+		return fmt.Errorf("failed to parse leader migration configuration: %v", errs)
 	}
 	cfg.LeaderMigrationConfiguration = *leaderMigrationConfig
 	return nil

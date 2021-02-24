@@ -60,6 +60,7 @@ import (
 	"k8s.io/component-base/version/verflag"
 	genericcontrollermanager "k8s.io/controller-manager/app"
 	"k8s.io/controller-manager/pkg/clientbuilder"
+	cmfeatures "k8s.io/controller-manager/pkg/features"
 	"k8s.io/controller-manager/pkg/informerfactory"
 	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/cmd/kube-controller-manager/app/config"
@@ -207,7 +208,7 @@ func Run(c *config.CompletedConfig, stopCh <-chan struct{}) error {
 		}
 	}
 
-	run := func(ctx context.Context) {
+	run := func(ctx context.Context, filter func(initFunc InitFunc) bool) {
 		rootClientBuilder := clientbuilder.SimpleControllerClientBuilder{
 			ClientConfig: c.Kubeconfig,
 		}
@@ -232,8 +233,17 @@ func Run(c *config.CompletedConfig, stopCh <-chan struct{}) error {
 		}
 		saTokenControllerInitFunc := serviceAccountTokenControllerStarter{rootClientBuilder: rootClientBuilder}.startServiceAccountTokenController
 
-		if err := StartControllers(controllerContext, saTokenControllerInitFunc, NewControllerInitializers(controllerContext.LoopMode), unsecuredMux); err != nil {
-			klog.Fatalf("error starting controllers: %v", err)
+		initializers := NewControllerInitializers(controllerContext.LoopMode)
+
+		if utilfeature.DefaultFeatureGate.Enabled(cmfeatures.ControllerManagerLeaderMigration) &&
+			c.ComponentConfig.Generic.LeaderMigrationEnabled {
+			// Leader Migration enabled
+
+		} else {
+			// Do not touch this part if Leader Migration is not enabled
+			if err := StartControllers(controllerContext, saTokenControllerInitFunc, initializers, unsecuredMux); err != nil {
+				klog.Fatalf("error starting controllers: %v", err)
+			}
 		}
 
 		controllerContext.InformerFactory.Start(controllerContext.Stop)
@@ -244,7 +254,9 @@ func Run(c *config.CompletedConfig, stopCh <-chan struct{}) error {
 	}
 
 	if !c.ComponentConfig.Generic.LeaderElection.LeaderElect {
-		run(context.TODO())
+		run(context.TODO(), func(initFunc InitFunc) bool {
+			return true
+		})
 		panic("unreachable")
 	}
 
@@ -269,13 +281,19 @@ func Run(c *config.CompletedConfig, stopCh <-chan struct{}) error {
 		klog.Fatalf("error creating lock: %v", err)
 	}
 
+	controllerFilter := func(initFunc InitFunc) bool {
+		return true
+	}
+
 	leaderelection.RunOrDie(context.TODO(), leaderelection.LeaderElectionConfig{
 		Lock:          rl,
 		LeaseDuration: c.ComponentConfig.Generic.LeaderElection.LeaseDuration.Duration,
 		RenewDeadline: c.ComponentConfig.Generic.LeaderElection.RenewDeadline.Duration,
 		RetryPeriod:   c.ComponentConfig.Generic.LeaderElection.RetryPeriod.Duration,
 		Callbacks: leaderelection.LeaderCallbacks{
-			OnStartedLeading: run,
+			OnStartedLeading: func(ctx context.Context) {
+				run(ctx, controllerFilter)
+			},
 			OnStoppedLeading: func() {
 				klog.Fatalf("leaderelection lost")
 			},
@@ -283,6 +301,26 @@ func Run(c *config.CompletedConfig, stopCh <-chan struct{}) error {
 		WatchDog: electionChecker,
 		Name:     "kube-controller-manager",
 	})
+
+	if utilfeature.DefaultFeatureGate.Enabled(cmfeatures.ControllerManagerLeaderMigration) &&
+		c.ComponentConfig.Generic.LeaderMigrationEnabled {
+		leaderelection.RunOrDie(context.TODO(), leaderelection.LeaderElectionConfig{
+			Lock:          rl,
+			LeaseDuration: c.ComponentConfig.Generic.LeaderElection.LeaseDuration.Duration,
+			RenewDeadline: c.ComponentConfig.Generic.LeaderElection.RenewDeadline.Duration,
+			RetryPeriod:   c.ComponentConfig.Generic.LeaderElection.RetryPeriod.Duration,
+			Callbacks: leaderelection.LeaderCallbacks{
+				OnStartedLeading: func(ctx context.Context) {
+					run(ctx, controllerFilter)
+				},
+				OnStoppedLeading: func() {
+					klog.Fatalf("leaderelection lost")
+				},
+			},
+			WatchDog: electionChecker,
+			Name:     "kube-controller-manager",
+		})
+	}
 	panic("unreachable")
 }
 
