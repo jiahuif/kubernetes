@@ -49,3 +49,23 @@ func RecommendedDefaultGenericControllerManagerConfiguration(obj *GenericControl
 	componentbaseconfigv1alpha1.RecommendedDefaultClientConnectionConfiguration(&obj.ClientConnection)
 	componentbaseconfigv1alpha1.RecommendedDefaultLeaderElectionConfiguration(&obj.LeaderElection)
 }
+
+// RecommendedDefaultLeaderMigrationConfiguration sets recommended default for controller managers of current version.
+func RecommendedDefaultLeaderMigrationConfiguration(obj *LeaderMigrationConfiguration) {
+	obj.LeaderName = "cloud-provider-extraction-migration"
+	obj.ResourceLock = "leases"
+	obj.ControllerLeaders = []ControllerLeaderConfiguration{
+		{
+			Name:      "service",
+			Component: "kube-controller-manager",
+		},
+		{
+			Name:      "route",
+			Component: "kube-controller-manager",
+		},
+		{
+			Name:      "cloud-node-lifecycle",
+			Component: "kube-controller-manager",
+		},
+	}
+}
