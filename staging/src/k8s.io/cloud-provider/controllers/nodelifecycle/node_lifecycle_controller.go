@@ -36,6 +36,7 @@ import (
 	cloudprovider "k8s.io/cloud-provider"
 	cloudproviderapi "k8s.io/cloud-provider/api"
 	cloudnodeutil "k8s.io/cloud-provider/node/helpers"
+	"k8s.io/controller-manager/controller"
 	"k8s.io/klog/v2"
 )
 
@@ -62,6 +63,8 @@ type CloudNodeLifecycleController struct {
 	// set in controller-manager
 	nodeMonitorPeriod time.Duration
 }
+
+var _ controller.Interface = (*CloudNodeLifecycleController)(nil)
 
 func NewCloudNodeLifecycleController(
 	nodeInformer coreinformers.NodeInformer,
@@ -185,6 +188,11 @@ func (c *CloudNodeLifecycleController) MonitorNodes() {
 			}
 		}
 	}
+}
+
+// Name returns the canonical name of the controller.
+func (c *CloudNodeLifecycleController) Name() string {
+	return "cloud-node-lifecycle"
 }
 
 // shutdownInCloudProvider returns true if the node is shutdown on the cloud provider

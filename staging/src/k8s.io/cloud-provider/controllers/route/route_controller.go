@@ -42,6 +42,7 @@ import (
 	cloudprovider "k8s.io/cloud-provider"
 	cloudnodeutil "k8s.io/cloud-provider/node/helpers"
 	"k8s.io/component-base/metrics/prometheus/ratelimiter"
+	"k8s.io/controller-manager/controller"
 )
 
 const (
@@ -66,6 +67,8 @@ type RouteController struct {
 	broadcaster      record.EventBroadcaster
 	recorder         record.EventRecorder
 }
+
+var _ controller.Interface = (*RouteController)(nil)
 
 func New(routes cloudprovider.Routes, kubeClient clientset.Interface, nodeInformer coreinformers.NodeInformer, clusterName string, clusterCIDRs []*net.IPNet) *RouteController {
 	if kubeClient != nil && kubeClient.CoreV1().RESTClient().GetRateLimiter() != nil {
@@ -358,6 +361,11 @@ func (rc *RouteController) isResponsibleForRoute(route *cloudprovider.Route) boo
 		}
 	}
 	return false
+}
+
+// Name returns the canonical name of the controller.
+func (rc *RouteController) Name() string {
+	return "route"
 }
 
 // checks if a node owns a route with a specific cidr

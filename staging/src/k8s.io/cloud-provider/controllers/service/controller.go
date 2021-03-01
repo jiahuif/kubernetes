@@ -41,6 +41,7 @@ import (
 	servicehelper "k8s.io/cloud-provider/service/helpers"
 	"k8s.io/component-base/featuregate"
 	"k8s.io/component-base/metrics/prometheus/ratelimiter"
+	"k8s.io/controller-manager/controller"
 	"k8s.io/klog/v2"
 )
 
@@ -95,6 +96,13 @@ type Controller struct {
 	// needFullSync indicates if the nodeSyncInternal will do a full node sync on all LB services.
 	needFullSync bool
 }
+
+// Name returns the canonical name of the controller.
+func (s *Controller) Name() string {
+	return "service"
+}
+
+var _ controller.Interface = (*Controller)(nil)
 
 // New returns a new service controller to keep cloud provider service resources
 // (like load balancers) in sync with the registry.

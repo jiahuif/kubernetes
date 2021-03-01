@@ -40,6 +40,7 @@ import (
 	cloudprovider "k8s.io/cloud-provider"
 	cloudproviderapi "k8s.io/cloud-provider/api"
 	cloudnodeutil "k8s.io/cloud-provider/node/helpers"
+	"k8s.io/controller-manager/controller"
 	"k8s.io/klog/v2"
 )
 
@@ -100,6 +101,8 @@ type CloudNodeController struct {
 	nodesSynced cache.InformerSynced
 	workqueue   workqueue.RateLimitingInterface
 }
+
+var _ controller.Interface = (*CloudNodeController)(nil)
 
 // NewCloudNodeController creates a CloudNodeController object
 func NewCloudNodeController(
@@ -617,6 +620,11 @@ func (cnc *CloudNodeController) getInstanceNodeAddresses(ctx context.Context, no
 	return &cloudprovider.InstanceMetadata{
 		NodeAddresses: nodeAddresses,
 	}, nil
+}
+
+// Name returns the canonical name of the controller.
+func (cnc *CloudNodeController) Name() string {
+	return "cloud-node"
 }
 
 func getCloudTaint(taints []v1.Taint) *v1.Taint {
