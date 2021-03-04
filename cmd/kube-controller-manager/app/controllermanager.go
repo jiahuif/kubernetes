@@ -61,6 +61,7 @@ import (
 	genericcontrollermanager "k8s.io/controller-manager/app"
 	"k8s.io/controller-manager/pkg/clientbuilder"
 	"k8s.io/controller-manager/pkg/informerfactory"
+	"k8s.io/controller-manager/pkg/leadermigration"
 	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/cmd/kube-controller-manager/app/config"
 	"k8s.io/kubernetes/cmd/kube-controller-manager/app/options"
@@ -206,6 +207,183 @@ func Run(c *config.CompletedConfig, stopCh <-chan struct{}) error {
 			return err
 		}
 	}
+
+	// If leader migration is enabled, use the redirected initialization
+	// otherwise, make absolutely NO change to the initialization process
+	if leadermigration.FeatureEnabled() && c.ComponentConfig.Generic.LeaderMigrationEnabled &&
+		c.ComponentConfig.Generic.LeaderElection.LeaderElect {
+
+		klog.Infof("starting leader migration")
+		leaderMigrator := leadermigration.NewLeaderMigrator(&c.ComponentConfig.Generic.LeaderMigration,
+			"kube-controller-manager")
+
+		// We need a channel to signal the start of Service Account Token Controller
+		//  all migrated channel must start after this.
+		saTokenControllerStarted := make(chan struct{})
+
+		// Extracted helper, we do not want to touch the path without leader migration
+		//  so the helper will only be used in run and migrated run.
+		createControllerContext := func(ctx context.Context, rootClientBuilder clientbuilder.ControllerClientBuilder) ControllerContext {
+			var clientBuilder clientbuilder.ControllerClientBuilder
+			if c.ComponentConfig.KubeCloudShared.UseServiceAccountCredentials {
+				if len(c.ComponentConfig.SAController.ServiceAccountKeyFile) == 0 {
+					// It's possible another controller process is creating the tokens for us.
+					// If one isn't, we'll timeout and exit when our client builder is unable to create the tokens.
+					klog.Warningf("--use-service-account-credentials was specified without providing a --service-account-private-key-file")
+				}
+
+				clientBuilder = clientbuilder.NewDynamicClientBuilder(
+					restclient.AnonymousClientConfig(c.Kubeconfig),
+					c.Client.CoreV1(),
+					metav1.NamespaceSystem)
+			} else {
+				clientBuilder = rootClientBuilder
+			}
+			controllerContext, err := CreateControllerContext(c, rootClientBuilder, clientBuilder, ctx.Done())
+			if err != nil {
+				klog.Fatalf("error building controller context: %v", err)
+			}
+			return controllerContext
+		}
+
+		// copied from the original func run, with extracted createControllerContext
+		run := func(ctx context.Context) {
+			klog.Info("leader migration: starting main controllers")
+			rootClientBuilder := clientbuilder.SimpleControllerClientBuilder{
+				ClientConfig: c.Kubeconfig,
+			}
+			controllerContext := createControllerContext(ctx, rootClientBuilder)
+			var saTokenControllerInitFunc InitFunc = func(ctx ControllerContext) (debuggingHandler http.Handler, enabled bool, err error) {
+				debuggingHandler, enabled, err = serviceAccountTokenControllerStarter{rootClientBuilder: rootClientBuilder}.startServiceAccountTokenController(ctx)
+				if err == nil {
+					// Resume starting migrated controllers once Service Account Token Controller is started successfully
+					//  if Service Account Token Controller fails to start, the controller manager will exit,
+					//  so no need to attempt migrated controllers
+					close(saTokenControllerStarted)
+				}
+				return
+			}
+
+			// get a list of initializers that should run under the main lock
+			initializers := filterInitializers(NewControllerInitializers(controllerContext.LoopMode), leaderMigrator.FilterFunc(false))
+			if err := StartControllers(controllerContext, saTokenControllerInitFunc, initializers, unsecuredMux); err != nil {
+				klog.Fatalf("error starting controllers: %v", err)
+			}
+
+			controllerContext.InformerFactory.Start(controllerContext.Stop)
+			controllerContext.ObjectOrMetadataInformerFactory.Start(controllerContext.Stop)
+			close(controllerContext.InformersStarted)
+
+			select {}
+		}
+
+		// copied from the original func run, with extracted createControllerContext
+		migratedRun := func(ctx context.Context) {
+			klog.Info("leader migration: starting migrated controllers")
+			rootClientBuilder := clientbuilder.SimpleControllerClientBuilder{
+				ClientConfig: c.Kubeconfig,
+			}
+			controllerContext := createControllerContext(ctx, rootClientBuilder)
+
+			// get a list of initializers that should run under the migration lock
+			initializers := filterInitializers(NewControllerInitializers(controllerContext.LoopMode), leaderMigrator.FilterFunc(true))
+			if err := StartControllers(controllerContext, nil, initializers, unsecuredMux); err != nil {
+				klog.Fatalf("error starting controllers: %v", err)
+			}
+
+			controllerContext.InformerFactory.Start(controllerContext.Stop)
+			controllerContext.ObjectOrMetadataInformerFactory.Start(controllerContext.Stop)
+			close(controllerContext.InformersStarted)
+
+			select {}
+		}
+
+		id, err := os.Hostname()
+		if err != nil {
+			return err
+		}
+
+		// add a uniquifier so that two processes on the same host don't accidentally both become active
+		id = id + "_" + string(uuid.NewUUID())
+
+		// Create the main lock.
+		rl, err := resourcelock.NewFromKubeconfig(c.ComponentConfig.Generic.LeaderElection.ResourceLock,
+			c.ComponentConfig.Generic.LeaderElection.ResourceNamespace,
+			c.ComponentConfig.Generic.LeaderElection.ResourceName,
+			resourcelock.ResourceLockConfig{
+				Identity:      id,
+				EventRecorder: c.EventRecorder,
+			},
+			c.Kubeconfig,
+			c.ComponentConfig.Generic.LeaderElection.RenewDeadline.Duration)
+		if err != nil {
+			klog.Fatalf("error creating lock: %v", err)
+		}
+
+		// Start the main lock.
+		go leaderelection.RunOrDie(context.TODO(), leaderelection.LeaderElectionConfig{
+			Lock:          rl,
+			LeaseDuration: c.ComponentConfig.Generic.LeaderElection.LeaseDuration.Duration,
+			RenewDeadline: c.ComponentConfig.Generic.LeaderElection.RenewDeadline.Duration,
+			RetryPeriod:   c.ComponentConfig.Generic.LeaderElection.RetryPeriod.Duration,
+			Callbacks: leaderelection.LeaderCallbacks{
+				OnStartedLeading: run,
+				OnStoppedLeading: func() {
+					klog.Fatalf("leaderelection lost")
+				},
+			},
+			WatchDog: electionChecker,
+			Name:     "kube-controller-manager",
+		})
+
+		// Create the migration lock.
+		rl, err = resourcelock.NewFromKubeconfig(
+			// The type of resource lock may differ from the main lock
+			//  see LeaderMigrationConfiguration for detail.
+			c.ComponentConfig.Generic.LeaderMigration.ResourceLock,
+
+			// Intentionally keep the namespace consist with the main lock
+			c.ComponentConfig.Generic.LeaderElection.ResourceNamespace,
+
+			// The name of the lock, please ensure the service account has sufficient permission on the
+			//  given resource name of the lease.
+			c.ComponentConfig.Generic.LeaderMigration.LeaderName,
+			resourcelock.ResourceLockConfig{
+				Identity:      id,
+				EventRecorder: c.EventRecorder,
+			},
+			c.Kubeconfig,
+			c.ComponentConfig.Generic.LeaderElection.RenewDeadline.Duration)
+		if err != nil {
+			klog.Fatalf("error creating lock: %v", err)
+		}
+
+		// Wait for Service Account Token Controller to start before acquiring the migration lock.
+		// At this point, the main lock must have already been acquired, or the KCM process must has already exited.
+		// We wait for the main lock before acquiring the migration lock to prevent the situation
+		//  where KCM instance A holds the main lock while KCM instance B holds the migration lock.
+		<-saTokenControllerStarted
+
+		// Start the migration lock.
+		leaderelection.RunOrDie(context.TODO(), leaderelection.LeaderElectionConfig{
+			Lock: rl,
+
+			// Keep the parameters of migration lock consistent with the main lock.
+			LeaseDuration: c.ComponentConfig.Generic.LeaderElection.LeaseDuration.Duration,
+			RenewDeadline: c.ComponentConfig.Generic.LeaderElection.RenewDeadline.Duration,
+			RetryPeriod:   c.ComponentConfig.Generic.LeaderElection.RetryPeriod.Duration,
+			Callbacks: leaderelection.LeaderCallbacks{
+				OnStartedLeading: migratedRun,
+				OnStoppedLeading: func() {
+					// Losing migration lock is fatal too.
+					klog.Fatalf("leaderelection lost")
+				},
+			},
+			WatchDog: electionChecker,
+			Name:     c.ComponentConfig.Generic.LeaderMigration.LeaderName,
+		})
+		panic("unreachable")
+	} // End of Leader Migration
 
 	run := func(ctx context.Context) {
 		rootClientBuilder := clientbuilder.SimpleControllerClientBuilder{
@@ -504,8 +682,10 @@ func CreateControllerContext(s *config.CompletedConfig, rootClientBuilder, clien
 func StartControllers(ctx ControllerContext, startSATokenController InitFunc, controllers map[string]InitFunc, unsecuredMux *mux.PathRecorderMux) error {
 	// Always start the SA token controller first using a full-power client, since it needs to mint tokens for the rest
 	// If this fails, just return here and fail since other controllers won't be able to get credentials.
-	if _, _, err := startSATokenController(ctx); err != nil {
-		return err
+	if startSATokenController != nil {
+		if _, _, err := startSATokenController(ctx); err != nil {
+			return err
+		}
 	}
 
 	// Initialize the cloud provider with a reference to the clientBuilder only after token controller
@@ -608,4 +788,14 @@ func readCA(file string) ([]byte, error) {
 	}
 
 	return rootCA, err
+}
+
+func filterInitializers(allInitializers map[string]InitFunc, filterFunc leadermigration.FilterFunc) map[string]InitFunc {
+	initializers := make(map[string]InitFunc)
+	for name, initFunc := range allInitializers {
+		if filterFunc(name) {
+			initializers[name] = initFunc
+		}
+	}
+	return initializers
 }

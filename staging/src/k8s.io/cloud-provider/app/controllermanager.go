@@ -52,6 +52,7 @@ import (
 	genericcontrollermanager "k8s.io/controller-manager/app"
 	"k8s.io/controller-manager/pkg/clientbuilder"
 	"k8s.io/controller-manager/pkg/informerfactory"
+	"k8s.io/controller-manager/pkg/leadermigration"
 	"k8s.io/klog/v2"
 )
 
@@ -171,6 +172,113 @@ func Run(c *cloudcontrollerconfig.CompletedConfig, cloud cloudprovider.Interface
 		if err := c.InsecureServing.Serve(handler, 0, stopCh); err != nil {
 			return err
 		}
+	}
+
+	// If leader migration is enabled, use the redirected initialization
+	// otherwise, make absolutely NO change to the initialization process
+	if leadermigration.FeatureEnabled() && c.ComponentConfig.Generic.LeaderMigrationEnabled &&
+		c.ComponentConfig.Generic.LeaderElection.LeaderElect {
+
+		leaderMigrator := leadermigration.NewLeaderMigrator(&c.ComponentConfig.Generic.LeaderMigration,
+			"cloud-controller-manager")
+
+		unmigratedInitializers := filterInitializers(controllerInitializers, leaderMigrator.FilterFunc(false))
+		migratedInitializers := filterInitializers(controllerInitializers, leaderMigrator.FilterFunc(true))
+
+		// We need to signal acquiring the main lock before attempting to acquire the migration lock
+		//  so that no instance will hold the migration lock but not the main lock at any point.
+		mainLockAcquired := make(chan struct{})
+
+		run := func(ctx context.Context, controllerInitializers map[string]InitFunc) {
+			clientBuilder := clientbuilder.SimpleControllerClientBuilder{
+				ClientConfig: c.Kubeconfig,
+			}
+			controllerContext, err := CreateControllerContext(c, clientBuilder, ctx.Done())
+			if err != nil {
+				klog.Fatalf("error building controller context: %v", err)
+			}
+			if err := startControllers(cloud, controllerContext, c, ctx.Done(), controllerInitializers); err != nil {
+				klog.Fatalf("error running controllers: %v", err)
+			}
+		}
+
+		// Identity used to distinguish between multiple cloud controller manager instances
+		id, err := os.Hostname()
+		if err != nil {
+			return err
+		}
+		// add a uniquifier so that two processes on the same host don't accidentally both become active
+		id = id + "_" + string(uuid.NewUUID())
+
+		// Lock required for leader election
+		rl, err := resourcelock.NewFromKubeconfig(c.ComponentConfig.Generic.LeaderElection.ResourceLock,
+			c.ComponentConfig.Generic.LeaderElection.ResourceNamespace,
+			c.ComponentConfig.Generic.LeaderElection.ResourceName,
+			resourcelock.ResourceLockConfig{
+				Identity:      id,
+				EventRecorder: c.EventRecorder,
+			},
+			c.Kubeconfig,
+			c.ComponentConfig.Generic.LeaderElection.RenewDeadline.Duration)
+		if err != nil {
+			klog.Fatalf("error creating lock: %v", err)
+		}
+
+		// Try and become the leader and start cloud controller manager loops
+		go leaderelection.RunOrDie(context.TODO(), leaderelection.LeaderElectionConfig{
+			Lock:          rl,
+			LeaseDuration: c.ComponentConfig.Generic.LeaderElection.LeaseDuration.Duration,
+			RenewDeadline: c.ComponentConfig.Generic.LeaderElection.RenewDeadline.Duration,
+			RetryPeriod:   c.ComponentConfig.Generic.LeaderElection.RetryPeriod.Duration,
+			Callbacks: leaderelection.LeaderCallbacks{
+				OnStartedLeading: func(ctx context.Context) {
+					klog.Info("leader migration: starting main controllers for CCM")
+					close(mainLockAcquired)
+					run(ctx, unmigratedInitializers)
+				},
+				OnStoppedLeading: func() {
+					klog.Fatalf("leaderelection lost")
+				},
+			},
+			WatchDog: electionChecker,
+			Name:     "cloud-controller-manager",
+		})
+
+		rl, err = resourcelock.NewFromKubeconfig(c.ComponentConfig.Generic.LeaderMigration.ResourceLock,
+			c.ComponentConfig.Generic.LeaderElection.ResourceNamespace,
+			c.ComponentConfig.Generic.LeaderMigration.LeaderName,
+			resourcelock.ResourceLockConfig{
+				Identity:      id,
+				EventRecorder: c.EventRecorder,
+			},
+			c.Kubeconfig,
+			c.ComponentConfig.Generic.LeaderElection.RenewDeadline.Duration)
+
+		if err != nil {
+			klog.Fatalf("error creating lock: %v", err)
+		}
+
+		<-mainLockAcquired
+		// Try and become the leader and start cloud controller manager loops
+		leaderelection.RunOrDie(context.TODO(), leaderelection.LeaderElectionConfig{
+			Lock:          rl,
+			LeaseDuration: c.ComponentConfig.Generic.LeaderElection.LeaseDuration.Duration,
+			RenewDeadline: c.ComponentConfig.Generic.LeaderElection.RenewDeadline.Duration,
+			RetryPeriod:   c.ComponentConfig.Generic.LeaderElection.RetryPeriod.Duration,
+			Callbacks: leaderelection.LeaderCallbacks{
+				OnStartedLeading: func(ctx context.Context) {
+					klog.Info("leader migration: starting migrated controllers for CCM")
+					run(ctx, migratedInitializers)
+				},
+				OnStoppedLeading: func() {
+					klog.Fatalf("leaderelection lost")
+				},
+			},
+			WatchDog: electionChecker,
+			Name:     c.ComponentConfig.Generic.LeaderMigration.LeaderName,
+		})
+
+		panic("unreachable")
 	}
 
 	run := func(ctx context.Context) {
@@ -416,4 +524,14 @@ func ResyncPeriod(c *cloudcontrollerconfig.CompletedConfig) func() time.Duration
 		factor := rand.Float64() + 1
 		return time.Duration(float64(c.ComponentConfig.Generic.MinResyncPeriod.Nanoseconds()) * factor)
 	}
+}
+
+func filterInitializers(allInitializers map[string]InitFunc, filterFunc leadermigration.FilterFunc) map[string]InitFunc {
+	initializers := make(map[string]InitFunc)
+	for name, initFunc := range allInitializers {
+		if filterFunc(name) {
+			initializers[name] = initFunc
+		}
+	}
+	return initializers
 }
