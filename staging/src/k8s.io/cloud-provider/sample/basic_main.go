@@ -21,6 +21,7 @@ limitations under the License.
 package main
 
 import (
+	"io"
 	"math/rand"
 	"os"
 	"time"
@@ -38,9 +39,16 @@ import (
 	"k8s.io/klog/v2"
 	// For existing cloud providers, the option to import legacy providers is still available.
 	// e.g. _"k8s.io/legacy-cloud-providers/<provider>"
+
+	// Also import the fake cloud provider so that the sample can have
+	//  at least 'fake' registered as a cloud provider.
+	"k8s.io/cloud-provider/fake"
 )
 
 func main() {
+	cloudprovider.RegisterCloudProvider("fake", func(config io.Reader) (cloudprovider.Interface, error) {
+		return &fake.Cloud{}, nil
+	})
 	rand.Seed(time.Now().UnixNano())
 
 	ccmOptions, err := options.NewCloudControllerManagerOptions()
