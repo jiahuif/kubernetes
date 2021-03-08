@@ -21,6 +21,7 @@ limitations under the License.
 package main
 
 import (
+	"io"
 	"math/rand"
 	"os"
 	"time"
@@ -38,9 +39,11 @@ import (
 	"k8s.io/klog/v2"
 	// For existing cloud providers, the option to import legacy providers is still available.
 	// e.g. _"k8s.io/legacy-cloud-providers/<provider>"
+	"k8s.io/cloud-provider/fake"
 )
 
 func main() {
+	cloudprovider.RegisterCloudProvider("fake", fakeCloudProviderFactory)
 	rand.Seed(time.Now().UnixNano())
 
 	ccmOptions, err := options.NewCloudControllerManagerOptions()
@@ -85,4 +88,10 @@ func cloudInitializer(config *config.CompletedConfig) cloudprovider.Interface {
 		}
 	}
 	return cloud
+}
+
+func fakeCloudProviderFactory(io.Reader) (cloudprovider.Interface, error) {
+	return &fake.Cloud{
+		DisableRoutes: true, // disable routes for server tests, otherwise --cluster-cidr is required
+	}, nil
 }
