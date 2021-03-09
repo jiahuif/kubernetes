@@ -53,6 +53,11 @@ type ClusterRoleAggregationController struct {
 	queue       workqueue.RateLimitingInterface
 }
 
+// Name returns the canonical name of the controller.
+func (c *ClusterRoleAggregationController) Name() string {
+	return "clusterrole-aggregation"
+}
+
 // NewClusterRoleAggregation creates a new controller
 func NewClusterRoleAggregation(clusterRoleInformer rbacinformers.ClusterRoleInformer, clusterRoleClient rbacclient.ClusterRolesGetter) *ClusterRoleAggregationController {
 	c := &ClusterRoleAggregationController{

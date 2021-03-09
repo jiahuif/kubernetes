@@ -411,3 +411,8 @@ func (c *Controller) enqueuePVCs(pod *v1.Pod, deleted bool) {
 		}
 	}
 }
+
+// Name returns the canonical name of the controller.
+func (c *Controller) Name() string {
+	return "pvc-protection"
+}

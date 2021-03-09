@@ -99,6 +99,11 @@ func (jm *Controller) Run(stopCh <-chan struct{}) {
 	klog.Infof("Shutting down CronJob Manager")
 }
 
+// Name returns the canonical name of the controller.
+func (jm *Controller) Name() string {
+	return "cronjob"
+}
+
 // syncAll lists all the CronJobs and Jobs and reconciles them.
 func (jm *Controller) syncAll() {
 	// List children (Jobs) before parents (CronJob).

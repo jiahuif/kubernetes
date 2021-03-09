@@ -94,6 +94,11 @@ type Publisher struct {
 	queue workqueue.RateLimitingInterface
 }
 
+// Name returns the canonical name of the controller.
+func (c *Publisher) Name() string {
+	return "root-ca-cert-publisher"
+}
+
 // Run starts process
 func (c *Publisher) Run(workers int, stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()

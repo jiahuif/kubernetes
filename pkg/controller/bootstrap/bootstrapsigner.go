@@ -307,3 +307,8 @@ func (e *Signer) getTokens() map[string]string {
 
 	return ret
 }
+
+// Name returns the canonical name of the controller.
+func (e *Signer) Name() string {
+	return "bootstrapsigner"
+}

@@ -43,6 +43,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	cloudprovider "k8s.io/cloud-provider"
+	"k8s.io/controller-manager/controller"
 	"k8s.io/kubernetes/pkg/controller/volume/events"
 	proxyutil "k8s.io/kubernetes/pkg/proxy/util"
 	"k8s.io/kubernetes/pkg/volume"
@@ -60,6 +61,7 @@ const (
 
 // ExpandController expands the pvs
 type ExpandController interface {
+	controller.Interface
 	Run(stopCh <-chan struct{})
 }
 
@@ -465,4 +467,9 @@ func (expc *expandController) GetSubpather() subpath.Interface {
 
 func (expc *expandController) GetFilteredDialOptions() *proxyutil.FilteredDialOptions {
 	return expc.filteredDialOptions
+}
+
+// Name returns the canonical name of the controller.
+func (expc *expandController) Name() string {
+	return "persistentvolume-expander"
 }

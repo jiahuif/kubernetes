@@ -47,6 +47,11 @@ type ReplicationManager struct {
 	replicaset.ReplicaSetController
 }
 
+// Name returns the canonical name of the controller.
+func (r *ReplicationManager) Name() string {
+	return "replicationcontroller"
+}
+
 // NewReplicationManager configures a replication manager with the specified event recorder
 func NewReplicationManager(podInformer coreinformers.PodInformer, rcInformer coreinformers.ReplicationControllerInformer, kubeClient clientset.Interface, burstReplicas int) *ReplicationManager {
 	eventBroadcaster := record.NewBroadcaster()

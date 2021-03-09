@@ -62,6 +62,11 @@ type NamespaceController struct {
 	namespacedResourcesDeleter deletion.NamespacedResourcesDeleterInterface
 }
 
+// Name returns the canonical name of the controller.
+func (nm *NamespaceController) Name() string {
+	return "namespace"
+}
+
 // NewNamespaceController creates a new NamespaceController
 func NewNamespaceController(
 	kubeClient clientset.Interface,

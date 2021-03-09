@@ -109,6 +109,11 @@ type ServiceAccountsController struct {
 	queue workqueue.RateLimitingInterface
 }
 
+// Name returns the canonical name of the controller.
+func (c *ServiceAccountsController) Name() string {
+	return "serviceaccount"
+}
+
 // Run runs the ServiceAccountsController blocks until receiving signal from stopCh.
 func (c *ServiceAccountsController) Run(workers int, stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()

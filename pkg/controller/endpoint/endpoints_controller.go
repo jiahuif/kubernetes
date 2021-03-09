@@ -175,6 +175,11 @@ type Controller struct {
 	serviceSelectorCache *endpointutil.ServiceSelectorCache
 }
 
+// Name returns the canonical name of the controller.
+func (e *Controller) Name() string {
+	return "replicationcontroller"
+}
+
 // Run will not return until stopCh is closed. workers determines how many
 // endpoints will be handled in parallel.
 func (e *Controller) Run(workers int, stopCh <-chan struct{}) {

@@ -20,6 +20,7 @@ import (
 	"context"
 	goerrors "errors"
 	"fmt"
+	"net/http"
 	"reflect"
 	"sync"
 	"time"
@@ -76,6 +77,11 @@ type GarbageCollector struct {
 	absentOwnerCache *ReferenceCache
 
 	workerLock sync.RWMutex
+}
+
+// Name returns the canonical name of the controller.
+func (gc *GarbageCollector) Name() string {
+	return "garbagecollector"
 }
 
 // NewGarbageCollector creates a new GarbageCollector.
@@ -725,4 +731,9 @@ func GetDeletableResources(discoveryClient discovery.ServerResourcesInterface) m
 	}
 
 	return deletableGroupVersionResources
+}
+
+// DebuggingHandler returns a debugging handler accessible at "/debug/controllers/garbagecollector/"
+func (gc *GarbageCollector) DebuggingHandler() http.Handler {
+	return NewDebugHandler(gc)
 }

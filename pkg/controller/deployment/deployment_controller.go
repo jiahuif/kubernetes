@@ -97,6 +97,11 @@ type DeploymentController struct {
 	queue workqueue.RateLimitingInterface
 }
 
+// Name returns the canonical name of the controller.
+func (dc *DeploymentController) Name() string {
+	return "deployment"
+}
+
 // NewDeploymentController creates a new DeploymentController.
 func NewDeploymentController(dInformer appsinformers.DeploymentInformer, rsInformer appsinformers.ReplicaSetInformer, podInformer coreinformers.PodInformer, client clientset.Interface) (*DeploymentController, error) {
 	eventBroadcaster := record.NewBroadcaster()

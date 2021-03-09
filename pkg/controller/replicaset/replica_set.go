@@ -108,6 +108,11 @@ type ReplicaSetController struct {
 	queue workqueue.RateLimitingInterface
 }
 
+// Name returns the canonical name of the controller.
+func (rsc *ReplicaSetController) Name() string {
+	return "replicaset"
+}
+
 // NewReplicaSetController configures a replica set controller with the specified event recorder
 func NewReplicaSetController(rsInformer appsinformers.ReplicaSetInformer, podInformer coreinformers.PodInformer, kubeClient clientset.Interface, burstReplicas int) *ReplicaSetController {
 	eventBroadcaster := record.NewBroadcaster()

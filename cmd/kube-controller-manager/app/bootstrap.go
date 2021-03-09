@@ -19,12 +19,11 @@ package app
 import (
 	"fmt"
 
-	"net/http"
-
+	"k8s.io/controller-manager/controller"
 	"k8s.io/kubernetes/pkg/controller/bootstrap"
 )
 
-func startBootstrapSignerController(ctx ControllerContext) (http.Handler, bool, error) {
+func startBootstrapSignerController(ctx ControllerContext) (controller.Interface, error) {
 	bsc, err := bootstrap.NewSigner(
 		ctx.ClientBuilder.ClientOrDie("bootstrap-signer"),
 		ctx.InformerFactory.Core().V1().Secrets(),
@@ -32,21 +31,21 @@ func startBootstrapSignerController(ctx ControllerContext) (http.Handler, bool, 
 		bootstrap.DefaultSignerOptions(),
 	)
 	if err != nil {
-		return nil, true, fmt.Errorf("error creating BootstrapSigner controller: %v", err)
+		return nil, fmt.Errorf("error creating BootstrapSigner controller: %v", err)
 	}
 	go bsc.Run(ctx.Stop)
-	return nil, true, nil
+	return bsc, nil
 }
 
-func startTokenCleanerController(ctx ControllerContext) (http.Handler, bool, error) {
+func startTokenCleanerController(ctx ControllerContext) (controller.Interface, error) {
 	tcc, err := bootstrap.NewTokenCleaner(
 		ctx.ClientBuilder.ClientOrDie("token-cleaner"),
 		ctx.InformerFactory.Core().V1().Secrets(),
 		bootstrap.DefaultTokenCleanerOptions(),
 	)
 	if err != nil {
-		return nil, true, fmt.Errorf("error creating TokenCleaner controller: %v", err)
+		return nil, fmt.Errorf("error creating TokenCleaner controller: %v", err)
 	}
 	go tcc.Run(ctx.Stop)
-	return nil, true, nil
+	return tcc, nil
 }

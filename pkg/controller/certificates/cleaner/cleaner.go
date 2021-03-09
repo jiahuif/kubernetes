@@ -64,6 +64,11 @@ type CSRCleanerController struct {
 	csrLister certificateslisters.CertificateSigningRequestLister
 }
 
+// Name returns the canonical name of the controller.
+func (ccc *CSRCleanerController) Name() string {
+	return "csrcleaner"
+}
+
 // NewCSRCleanerController creates a new CSRCleanerController.
 func NewCSRCleanerController(
 	csrClient csrclient.CertificateSigningRequestInterface,

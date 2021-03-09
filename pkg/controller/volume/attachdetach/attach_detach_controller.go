@@ -46,6 +46,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	cloudprovider "k8s.io/cloud-provider"
+	"k8s.io/controller-manager/controller"
 	csitrans "k8s.io/csi-translation-lib"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach/cache"
 	"k8s.io/kubernetes/pkg/controller/volume/attachdetach/metrics"
@@ -99,6 +100,8 @@ var DefaultTimerConfig TimerConfig = TimerConfig{
 
 // AttachDetachController defines the operations supported by this controller.
 type AttachDetachController interface {
+	controller.Interface
+
 	Run(stopCh <-chan struct{})
 	GetDesiredStateOfWorld() cache.DesiredStateOfWorld
 }
@@ -894,4 +897,9 @@ func (adc *attachDetachController) GetFilteredDialOptions() *proxyutil.FilteredD
 
 func (adc *attachDetachController) GetCSIDriverLister() storagelistersv1.CSIDriverLister {
 	return adc.csiDriverLister
+}
+
+// Name returns the canonical name of the controller.
+func (adc *attachDetachController) Name() string {
+	return "attachdetach"
 }

@@ -94,6 +94,11 @@ type Controller struct {
 	recorder record.EventRecorder
 }
 
+// Name returns the canonical name of the controller.
+func (jm *Controller) Name() string {
+	return "job"
+}
+
 // NewController creates a new Job controller that keeps the relevant pods
 // in sync with their corresponding Job objects.
 func NewController(podInformer coreinformers.PodInformer, jobInformer batchinformers.JobInformer, kubeClient clientset.Interface) *Controller {

@@ -17,7 +17,6 @@ limitations under the License.
 package app
 
 import (
-	"net/http"
 	"testing"
 	"time"
 
@@ -28,6 +27,8 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	fakeclientset "k8s.io/client-go/kubernetes/fake"
 	restclient "k8s.io/client-go/rest"
+	"k8s.io/controller-manager/controller"
+	cmerrors "k8s.io/controller-manager/controller/errors"
 )
 
 // TestClientBuilder inherits ClientBuilder and can accept a given fake clientset.
@@ -104,7 +105,7 @@ func possibleDiscoveryResource() []*metav1.APIResourceList {
 	}
 }
 
-type controllerInitFunc func(ControllerContext) (http.Handler, bool, error)
+type controllerInitFunc func(ControllerContext) (controller.Interface, error)
 
 func TestController_DiscoveryError(t *testing.T) {
 	controllerInitFuncMap := map[string]controllerInitFunc{
@@ -143,12 +144,12 @@ func TestController_DiscoveryError(t *testing.T) {
 			InformersStarted:                make(chan struct{}),
 		}
 		for funcName, controllerInit := range controllerInitFuncMap {
-			_, _, err := controllerInit(ctx)
-			if test.expectedErr != (err != nil) {
+			_, err := controllerInit(ctx)
+			if test.expectedErr != (err != nil && err != cmerrors.ErrNotEnabled) {
 				t.Errorf("%v test failed for use case: %v", funcName, name)
 			}
 		}
-		_, _, err := startModifiedNamespaceController(
+		_, err := startModifiedNamespaceController(
 			ctx, testClientset, testClientBuilder.ConfigOrDie("namespace-controller"))
 		if test.expectedErr != (err != nil) {
 			t.Errorf("Namespace Controller test failed for use case: %v", name)

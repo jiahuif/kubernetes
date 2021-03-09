@@ -101,6 +101,11 @@ type Controller struct {
 	workerLock sync.RWMutex
 }
 
+// Name returns the canonical name of the controller.
+func (rq *Controller) Name() string {
+	return "resourcequota"
+}
+
 // NewController creates a quota controller with specified options
 func NewController(options *ControllerOptions) (*Controller, error) {
 	// build the resource quota controller

@@ -269,6 +269,11 @@ func (tc *Controller) processTTL(job *batch.Job) (expiredAt *time.Time, err erro
 	return nil, nil
 }
 
+// Name returns the canonical name of the controller.
+func (tc *Controller) Name() string {
+	return "ttl-after-finished"
+}
+
 // needsCleanup checks whether a Job has finished and has a TTL set.
 func needsCleanup(j *batch.Job) bool {
 	return j.Spec.TTLSecondsAfterFinished != nil && jobutil.IsJobFinished(j)

@@ -208,3 +208,8 @@ func (c *Controller) pvAddedUpdated(obj interface{}) {
 		c.queue.Add(pv.Name)
 	}
 }
+
+// Name returns the canonical name of the controller.
+func (c *Controller) Name() string {
+	return "pv-protection"
+}

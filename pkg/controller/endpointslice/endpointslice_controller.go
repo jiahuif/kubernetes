@@ -248,6 +248,11 @@ type Controller struct {
 	topologyCache *topologycache.TopologyCache
 }
 
+// Name returns the canonical name of the controller.
+func (c *Controller) Name() string {
+	return "endpointslice"
+}
+
 // Run will not return until stopCh is closed.
 func (c *Controller) Run(workers int, stopCh <-chan struct{}) {
 	defer utilruntime.HandleCrash()

@@ -237,6 +237,11 @@ func (gcc *PodGCController) gcUnscheduledTerminating(pods []*v1.Pod) {
 	}
 }
 
+// Name returns the canonical name of the controller.
+func (gcc *PodGCController) Name() string {
+	return "podgc"
+}
+
 // byCreationTimestamp sorts a list by creation timestamp, using their names as a tie breaker.
 type byCreationTimestamp []*v1.Pod
 

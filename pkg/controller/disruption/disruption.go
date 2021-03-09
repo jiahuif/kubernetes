@@ -835,3 +835,8 @@ func (dc *DisruptionController) writePdbStatus(pdb *policy.PodDisruptionBudget) 
 	_, err := dc.kubeClient.PolicyV1().PodDisruptionBudgets(pdb.Namespace).UpdateStatus(context.TODO(), pdb, metav1.UpdateOptions{})
 	return err
 }
+
+// Name returns the canonical name of the controller.
+func (dc *DisruptionController) Name() string {
+	return "disruption"
+}

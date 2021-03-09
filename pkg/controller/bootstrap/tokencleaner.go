@@ -211,3 +211,8 @@ func (tc *TokenCleaner) evalSecret(o interface{}) {
 		tc.queue.AddAfter(key, ttl)
 	}
 }
+
+// Name returns the canonical name of the controller.
+func (tc *TokenCleaner) Name() string {
+	return "tokencleaner"
+}

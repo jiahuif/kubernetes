@@ -129,6 +129,11 @@ type DaemonSetsController struct {
 	failedPodsBackoff *flowcontrol.Backoff
 }
 
+// Name returns the canonical name of the controller.
+func (dsc *DaemonSetsController) Name() string {
+	return "daemonset"
+}
+
 // NewDaemonSetsController creates a new DaemonSetsController
 func NewDaemonSetsController(
 	daemonSetInformer appsinformers.DaemonSetInformer,

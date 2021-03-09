@@ -348,6 +348,11 @@ type Controller struct {
 	podUpdateQueue  workqueue.RateLimitingInterface
 }
 
+// Name returns the canonical name of the controller.
+func (nc *Controller) Name() string {
+	return "nodelifecycle"
+}
+
 // NewNodeLifecycleController returns a new taint controller.
 func NewNodeLifecycleController(
 	leaseInformer coordinformers.LeaseInformer,

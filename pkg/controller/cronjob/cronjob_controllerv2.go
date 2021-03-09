@@ -677,6 +677,11 @@ func (jm *ControllerV2) removeOldestJobs(cj *batchv1.CronJob, js []*batchv1.Job,
 	}
 }
 
+// Name returns the canonical name of the controller.
+func (jm *ControllerV2) Name() string {
+	return "cronjob"
+}
+
 // isJobInActiveList take a job and checks if activeJobs has a job with the same
 // name and namespace.
 func isJobInActiveList(job *batchv1.Job, activeJobs []corev1.ObjectReference) bool {

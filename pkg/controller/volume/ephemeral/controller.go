@@ -37,6 +37,7 @@ import (
 	kcache "k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/controller-manager/controller"
 	"k8s.io/kubernetes/pkg/controller/volume/common"
 	ephemeralvolumemetrics "k8s.io/kubernetes/pkg/controller/volume/ephemeral/metrics"
 	"k8s.io/kubernetes/pkg/controller/volume/events"
@@ -45,6 +46,8 @@ import (
 
 // Controller creates PVCs for ephemeral inline volumes in a pod spec.
 type Controller interface {
+	controller.Interface
+
 	Run(workers int, stopCh <-chan struct{})
 }
 
@@ -114,6 +117,11 @@ func NewController(
 	}
 
 	return ec, nil
+}
+
+// Name returns the canonical name of the controller.
+func (ec *ephemeralController) Name() string {
+	return "ephemeral-volume"
 }
 
 func (ec *ephemeralController) enqueuePod(obj interface{}) {

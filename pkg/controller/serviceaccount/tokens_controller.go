@@ -707,6 +707,11 @@ func (e *TokensController) listTokenSecrets(serviceAccount *v1.ServiceAccount) (
 	return items, nil
 }
 
+// Name returns the canonical name of the controller.
+func (e *TokensController) Name() string {
+	return "token"
+}
+
 func getSecretReferences(serviceAccount *v1.ServiceAccount) sets.String {
 	references := sets.NewString()
 	for _, secret := range serviceAccount.Secrets {

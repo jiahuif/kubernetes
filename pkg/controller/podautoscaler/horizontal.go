@@ -102,6 +102,11 @@ type HorizontalController struct {
 	scaleDownEvents map[string][]timestampedScaleEvent
 }
 
+// Name returns the canonical name of the controller.
+func (a *HorizontalController) Name() string {
+	return "horizontalpodautoscaling"
+}
+
 // NewHorizontalController creates a new HorizontalController.
 func NewHorizontalController(
 	evtNamespacer v1core.EventsGetter,

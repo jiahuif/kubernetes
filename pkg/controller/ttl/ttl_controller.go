@@ -294,3 +294,8 @@ func (ttlc *Controller) updateNodeIfNeeded(key string) error {
 
 	return ttlc.patchNodeWithAnnotation(node.DeepCopy(), v1.ObjectTTLAnnotationKey, desiredTTL)
 }
+
+// Name returns the canonical name of the controller.
+func (ttlc *Controller) Name() string {
+	return "ttl"
+}

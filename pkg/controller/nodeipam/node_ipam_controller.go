@@ -66,6 +66,11 @@ type Controller struct {
 	cidrAllocator ipam.CIDRAllocator
 }
 
+// Name returns the canonical name of the controller.
+func (nc *Controller) Name() string {
+	return "nodeipam"
+}
+
 // NewNodeIpamController returns a new node IP Address Management controller to
 // sync instances from cloudprovider.
 // This method returns an error if it is unable to initialize the CIDR bitmap with

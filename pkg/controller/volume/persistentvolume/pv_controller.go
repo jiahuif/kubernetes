@@ -243,6 +243,11 @@ type PersistentVolumeController struct {
 	filteredDialOptions *proxyutil.FilteredDialOptions
 }
 
+// Name returns the canonical name of the controller.
+func (ctrl *PersistentVolumeController) Name() string {
+	return "persistentvolume-binder"
+}
+
 // syncClaim is the main controller method to decide what to do with a claim.
 // It's invoked by appropriate cache.Controller callbacks when a claim is
 // created, updated or periodically synced. We do not differentiate between

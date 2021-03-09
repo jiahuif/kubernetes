@@ -453,3 +453,8 @@ func (ssc *StatefulSetController) syncStatefulSet(set *apps.StatefulSet, pods []
 	klog.V(4).Infof("Successfully synced StatefulSet %s/%s successful", set.Namespace, set.Name)
 	return nil
 }
+
+// Name returns the canonical name of the controller.
+func (ssc *StatefulSetController) Name() string {
+	return "statefulset"
+}

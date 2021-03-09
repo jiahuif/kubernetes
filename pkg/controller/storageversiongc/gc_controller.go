@@ -277,3 +277,8 @@ func (c *Controller) updateOrDeleteStorageVersion(sv *apiserverinternalv1alpha1.
 		context.TODO(), sv, metav1.UpdateOptions{})
 	return err
 }
+
+// Name returns the canonical name of the controller.
+func (c *Controller) Name() string {
+	return "storage-version-gc"
+}

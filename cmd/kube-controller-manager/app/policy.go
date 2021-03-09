@@ -21,21 +21,21 @@ limitations under the License.
 package app
 
 import (
-	"net/http"
-
 	"k8s.io/klog/v2"
 
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/scale"
+	"k8s.io/controller-manager/controller"
+	cmerrors "k8s.io/controller-manager/controller/errors"
 	"k8s.io/kubernetes/pkg/controller/disruption"
 	kubefeatures "k8s.io/kubernetes/pkg/features"
 )
 
-func startDisruptionController(ctx ControllerContext) (http.Handler, bool, error) {
+func startDisruptionController(ctx ControllerContext) (controller.Interface, error) {
 	if !utilfeature.DefaultFeatureGate.Enabled(kubefeatures.PodDisruptionBudget) {
 		klog.Infof("Refusing to start disruption because the PodDisruptionBudget feature is disabled")
-		return nil, false, nil
+		return nil, cmerrors.ErrNotEnabled
 	}
 
 	client := ctx.ClientBuilder.ClientOrDie("disruption-controller")
@@ -43,10 +43,10 @@ func startDisruptionController(ctx ControllerContext) (http.Handler, bool, error
 	scaleKindResolver := scale.NewDiscoveryScaleKindResolver(client.Discovery())
 	scaleClient, err := scale.NewForConfig(config, ctx.RESTMapper, dynamic.LegacyAPIPathResolverFunc, scaleKindResolver)
 	if err != nil {
-		return nil, false, err
+		return nil, cmerrors.ErrNotEnabled
 	}
 
-	go disruption.NewDisruptionController(
+	c := disruption.NewDisruptionController(
 		ctx.InformerFactory.Core().V1().Pods(),
 		ctx.InformerFactory.Policy().V1().PodDisruptionBudgets(),
 		ctx.InformerFactory.Core().V1().ReplicationControllers(),
@@ -57,6 +57,7 @@ func startDisruptionController(ctx ControllerContext) (http.Handler, bool, error
 		ctx.RESTMapper,
 		scaleClient,
 		client.Discovery(),
-	).Run(ctx.Stop)
-	return nil, true, nil
+	)
+	go c.Run(ctx.Stop)
+	return c, nil
 }
